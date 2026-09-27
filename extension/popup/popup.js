@@ -10,7 +10,7 @@ document.getElementById('solve-btn').addEventListener('click', async () => {
 
     try {
         // 1. Load ONNX Runtime Web session
-        const session = await ort.InferenceSession.create('../assets/model.onnx');
+        const session = await ort.InferenceSession.create('../assets/model_int8.onnx');
         
         statusEl.innerText = "Processing Audio...";
         
