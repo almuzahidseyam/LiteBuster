@@ -1,11 +1,17 @@
 ﻿{
   "manifest_version": 3,
-  "name": "LiteBuster Demo",
-  "version": "1.0",
-  "description": "Lightweight On-Device Audio CAPTCHA Recognition using ONNX",
-  "permissions": ["activeTab", "scripting"],
+  "name": "LiteBuster Demo (Pro)",
+  "version": "2.0",
+  "description": "On-Device Audio CAPTCHA Recognition using ONNX WebGPU and Chrome Side Panel",
+  "permissions": ["activeTab", "scripting", "sidePanel"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-    "default_popup": "popup/popup.html"
+    "default_title": "Open LiteBuster Panel"
+  },
+  "side_panel": {
+    "default_path": "popup/popup.html"
   },
   "content_scripts": [
     {

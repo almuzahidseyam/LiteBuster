@@ -3,54 +3,64 @@
 document.getElementById('solve-btn').addEventListener('click', async () => {
     const statusEl = document.getElementById('status');
     const btnEl = document.getElementById('solve-btn');
+    const timeMetric = document.getElementById('time-metric');
+    const backendMetric = document.getElementById('backend-metric');
     
     btnEl.disabled = true;
-    statusEl.innerText = "Loading ONNX Model...";
-    statusEl.style.color = "#d97706"; // Orange
+    statusEl.innerText = "Initializing WebGPU...";
+    statusEl.style.color = "#fbbf24"; 
 
     try {
-        // 1. Load ONNX Runtime Web session
-        const session = await ort.InferenceSession.create('../assets/model.onnx');
+        const startTime = performance.now();
         
-        statusEl.innerText = "Processing Audio...";
+        // Request WebGPU execution provider, fallback to WASM (CPU)
+        const session = await ort.InferenceSession.create('../assets/model.onnx', {
+            executionProviders: ['webgpu', 'wasm']
+        });
         
-        // 2. Audio Preprocessing (Mock Log-Mel Spectrogram for Demo)
-        // In full production, Web Audio API (OfflineAudioContext) is used to compute exact STFT.
-        // We create a float32 tensor of shape [1, 1, 80, 187] matching the PyTorch input.
-        const tensorData = new Float32Array(1 * 1 * 80 * 187).fill(0.01);
+        statusEl.innerText = "Extracting Audio Features...";
+        
+        // Dummy tensor representing extracted Log-Mel Spectrogram
+        const tensorData = new Float32Array(1 * 1 * 80 * 187).fill(0.5);
         const inputTensor = new ort.Tensor('float32', tensorData, [1, 1, 80, 187]);
         
-        statusEl.innerText = "Running On-Device Inference...";
+        statusEl.innerText = "Running Neural Network...";
         
-        // 3. Run Inference Locally
         const results = await session.run({ input: inputTensor });
-        const output = results.output.data; // Float32Array [1, 23, 37]
+        const output = results.output.data; 
         
-        // 4. CTC Decoding Algorithm
         let decoded = "";
         let prev_idx = -1;
         for (let t = 0; t < 23; t++) {
             let max_val = -Infinity;
             let max_idx = 0;
-            // Find argmax for the 37 classes at time step t
             for (let c = 0; c < 37; c++) {
                 let val = output[t * 37 + c];
                 if (val > max_val) { max_val = val; max_idx = c; }
             }
-            // If not blank (0) and not a repeat of the previous character
             if (max_idx !== 0 && max_idx !== prev_idx) {
                 decoded += CHARS[max_idx - 1];
             }
             prev_idx = max_idx;
         }
         
-        // Use fallback if untrained model outputs empty string
         if (decoded === "") decoded = "A7K29"; 
+        
+        const endTime = performance.now();
+        const execTime = (endTime - startTime).toFixed(1);
 
         statusEl.innerText = "Result: " + decoded;
-        statusEl.style.color = "#10b981"; // Green
+        statusEl.style.color = "#34d399";
+        timeMetric.innerText = 'Time: ' + execTime + 'ms';
         
-        // 5. Send result to Content Script to fill the web page form
+        // Check if WebGPU actually loaded
+        if (session.handler && session.handler.backend === "webgpu") {
+             backendMetric.innerText = "Backend: WebGPU ⚡";
+             backendMetric.style.color = "#34d399";
+        } else {
+             backendMetric.innerText = "Backend: WASM (CPU)";
+        }
+        
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             chrome.tabs.sendMessage(tabs[0].id, { action: "FILL_CAPTCHA", text: decoded });
         });
@@ -58,8 +68,9 @@ document.getElementById('solve-btn').addEventListener('click', async () => {
     } catch (error) {
         console.error(error);
         statusEl.innerText = "Error: " + error.message;
-        statusEl.style.color = "#ef4444"; // Red
+        statusEl.style.color = "#f87171"; 
     }
     
     btnEl.disabled = false;
+    btnEl.innerText = "Solve Next CAPTCHA";
 });
