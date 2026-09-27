@@ -1,0 +1,16 @@
+﻿{
+  "manifest_version": 3,
+  "name": "LiteBuster Demo",
+  "version": "1.0",
+  "description": "Lightweight On-Device Audio CAPTCHA Recognition using ONNX",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://127.0.0.1/*", "*://localhost/*"],
+      "js": ["content/content.js"]
+    }
+  ]
+}
