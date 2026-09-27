@@ -1,4 +1,5 @@
-﻿const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+﻿ort.env.wasm.wasmPaths = '../lib/';
+const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 document.getElementById('solve-btn').addEventListener('click', async () => {
     const statusEl = document.getElementById('status');
@@ -61,7 +62,7 @@ document.getElementById('solve-btn').addEventListener('click', async () => {
              backendMetric.innerText = "Backend: WASM (CPU)";
         }
         
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        chrome.tabs.query({active: true, lastFocusedWindow: true}, function(tabs) {
             chrome.tabs.sendMessage(tabs[0].id, { action: "FILL_CAPTCHA", text: decoded });
         });
         
@@ -74,3 +75,4 @@ document.getElementById('solve-btn').addEventListener('click', async () => {
     btnEl.disabled = false;
     btnEl.innerText = "Solve Next CAPTCHA";
 });
+
