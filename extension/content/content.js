@@ -1,4 +1,4 @@
-﻿function injectBusterButton() {
+function injectBusterButton() {
     const container = document.querySelector('.captcha-box');
     if (!container || document.getElementById('litebuster-injected-btn')) return;
 
@@ -34,7 +34,7 @@
 // Run on page load
 injectBusterButton();
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(request) {
     if (request.action === "FILL_CAPTCHA") {
         console.log("LiteBuster Content Script received text: " + request.text);
         const inputField = document.getElementById("captcha-input");
