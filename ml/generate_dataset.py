@@ -1,4 +1,4 @@
-﻿import os
+import os
 import random
 import string
 import pandas as pd
@@ -7,47 +7,50 @@ import librosa
 import soundfile as sf
 from gtts import gTTS
 import warnings
+from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift, RoomSimulator, BandPassFilter, Padding
 
-# Suppress librosa warnings
+# Suppress warnings
 warnings.filterwarnings('ignore')
 
 DATASET_DIR = "ml/dataset"
 NUM_BASE_SAMPLES = 10  # Note: Set this to 1000 or 5000 for actual model training
 
+# Advanced Augmentation Pipeline
+augmenter = Compose([
+    AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
+    TimeStretch(min_rate=0.8, max_rate=1.2, p=0.5),
+    PitchShift(min_semitones=-2, max_semitones=2, p=0.5),
+    RoomSimulator(p=0.3),  # Reverb
+    BandPassFilter(min_center_freq=200, max_center_freq=4000, p=0.4), # Band-pass
+    Padding(mode="silence", min_fraction=0.05, max_fraction=0.1, pad_section="end", p=0.3) # Silence Insertion
+])
+
 def ensure_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def add_noise(data, noise_factor=0.01):
-    noise = np.random.randn(len(data))
-    return data + noise_factor * noise
-
 def generate_sample(text, split_dir, file_idx):
-    # 1. Generate base TTS audio
     spoken_text = ' '.join(list(text))
     tts = gTTS(text=spoken_text, lang='en', slow=True)
     
     temp_file = f"temp_{file_idx}.mp3"
     tts.save(temp_file)
     
-    # 2. Load the audio file using Librosa
     y, sr = librosa.load(temp_file, sr=16000)
     os.remove(temp_file)
     
-    # 3. Create Audio Augmentations
+    # Generate variations using advanced audiomentations
     variations = {
         "clean": y,
-        "noisy": add_noise(y, 0.015),
-        "fast": librosa.effects.time_stretch(y, rate=1.2),
-        "slow": librosa.effects.time_stretch(y, rate=0.85)
+        "aug_1": augmenter(samples=y, sample_rate=sr),
+        "aug_2": augmenter(samples=y, sample_rate=sr),
+        "aug_3": augmenter(samples=y, sample_rate=sr)
     }
     
     records = []
     for var_name, audio_data in variations.items():
         filename = f"audio_{file_idx:05d}_{var_name}.wav"
         filepath = os.path.join(DATASET_DIR, split_dir, filename)
-        
-        # Save as standard WAV file for training
         sf.write(filepath, audio_data, sr)
         records.append({"file": filename, "text": text})
         

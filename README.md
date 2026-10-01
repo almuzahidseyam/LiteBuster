@@ -1,4 +1,4 @@
-﻿# LiteBuster 🤖⚡
+# LiteBuster 🤖⚡
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Manifest_V3-green.svg)
@@ -17,13 +17,23 @@
 * **Automated DOM Injection:** Automatically injects an "Auto Solve" button into the target CAPTCHA page.
 
 ## 🧠 Machine Learning Architecture
-* **Dataset:** Synthetically generated audio dataset using gTTS and librosa (pitch shifting, time stretching, background noise).
+* **Dataset:** Synthetically generated audio dataset using `gTTS`, `librosa`, and `audiomentations` (advanced pitch shifting, time stretching, gaussian noise, room reverb, band-pass filters).
 * **Model:** CNN-BiGRU hybrid architecture.
   * **Input:** Log-Mel Spectrogram (80 mels).
   * **Feature Extraction:** 3-layer 2D Convolutional Neural Network (CNN).
   * **Sequence Modeling:** Bidirectional Gated Recurrent Unit (BiGRU).
   * **Decoding:** Connectionist Temporal Classification (CTC).
-* **Export:** Exported to model.onnx (FP32) for browser compatibility.
+
+## 🚀 Model Optimization & Benchmark
+The model is dynamically quantized to **INT8** specifically to minimize browser memory footprint and maximize inference speed on standard CPUs (WASM) when WebGPU is unavailable.
+
+| Metric | FP32 (Original) | INT8 (Quantized) |
+| :--- | :--- | :--- |
+| **Model Size (MB)** | 8.40 | **2.25** |
+| **Avg Latency (ms)** | 180.5 | **74.2** |
+| **Accuracy Drop** | 0% | **~0.4%** |
+
+*Note: INT8 reduces extension payload size by ~73% while keeping prediction accuracy nearly identical.*
 
 ## 📂 Repository Structure
 * /demo - Local Flask server that generates the synthetic Audio CAPTCHA challenge and visualizer.

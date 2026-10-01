@@ -1,4 +1,4 @@
-﻿ort.env.wasm.wasmPaths = '../lib/';
+ort.env.wasm.wasmPaths = '../lib/';
 const CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 document.getElementById('solve-btn').addEventListener('click', async () => {
@@ -8,16 +8,30 @@ document.getElementById('solve-btn').addEventListener('click', async () => {
     const backendMetric = document.getElementById('backend-metric');
     
     btnEl.disabled = true;
-    statusEl.innerText = "Initializing WebGPU...";
+    statusEl.innerText = "Initializing Backend...";
     statusEl.style.color = "#fbbf24"; 
 
     try {
         const startTime = performance.now();
+        let session;
         
-        // Request WebGPU execution provider, fallback to WASM (CPU)
-        const session = await ort.InferenceSession.create('../assets/model.onnx', {
-            executionProviders: ['webgpu', 'wasm']
-        });
+        // Premium WASM Fallback Architecture
+        try {
+            statusEl.innerText = "Initializing WebGPU Backend...";
+            session = await ort.InferenceSession.create('../assets/model_int8.onnx', {
+                executionProviders: ['webgpu']
+            });
+            backendMetric.innerText = "Backend: WebGPU (GPU)";
+            backendMetric.style.color = "#34d399";
+        } catch (webgpuError) {
+            console.warn("WebGPU not supported or failed. Falling back to WASM (CPU)...", webgpuError);
+            statusEl.innerText = "Initializing WASM (CPU) Backend...";
+            session = await ort.InferenceSession.create('../assets/model_int8.onnx', {
+                executionProviders: ['wasm']
+            });
+            backendMetric.innerText = "Backend: WASM (CPU)";
+            backendMetric.style.color = "#fbbf24";
+        }
         
         statusEl.innerText = "Extracting Audio Features...";
         
@@ -54,14 +68,6 @@ document.getElementById('solve-btn').addEventListener('click', async () => {
         statusEl.style.color = "#34d399";
         timeMetric.innerText = 'Time: ' + execTime + 'ms';
         
-        // Check if WebGPU actually loaded
-        if (session.handler && session.handler.backend === "webgpu") {
-             backendMetric.innerText = "Backend: WebGPU ⚡";
-             backendMetric.style.color = "#34d399";
-        } else {
-             backendMetric.innerText = "Backend: WASM (CPU)";
-        }
-        
         chrome.tabs.query({active: true, lastFocusedWindow: true}, function(tabs) {
             chrome.tabs.sendMessage(tabs[0].id, { action: "FILL_CAPTCHA", text: decoded });
         });
@@ -75,4 +81,3 @@ document.getElementById('solve-btn').addEventListener('click', async () => {
     btnEl.disabled = false;
     btnEl.innerText = "Solve Next CAPTCHA";
 });
-
